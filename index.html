@@ -1,0 +1,705 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ikigai</title>
+<link rel="icon" href="data:,">
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://unpkg.com/tone@14.7.77/build/Tone.js"></script>
+<style>html,body,#root{margin:0;padding:0;min-height:100vh;}</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" data-presets="react" data-type="module">
+const { useState, useRef, useCallback, useMemo } = React;
+
+
+/* ---------------------------------------------------------
+   IKIGAI — data
+--------------------------------------------------------- */
+
+const AXES = ["criativo","analitico","social","tecnico","cuidado","estrutura","empreendedor","pratico"];
+
+const AXIS_LABEL = {
+  criativo: "Criativo(a)",
+  analitico: "Analítico(a)",
+  social: "Social",
+  tecnico: "Técnico(a)",
+  cuidado: "Cuidador(a)",
+  estrutura: "Organizado(a)",
+  empreendedor: "Empreendedor(a)",
+  pratico: "Prático(a)",
+};
+
+const PILLARS = [
+  { key: "paixao",   label: "Paixão",   sub: "o que você ama fazer",         color: "#2F4468" },
+  { key: "talento",  label: "Talento",  sub: "o que você é bom em",          color: "#566246" },
+  { key: "mundo",    label: "Mundo",    sub: "o que o mundo precisa",        color: "#C08A28" },
+  { key: "retorno",  label: "Retorno",  sub: "pelo que podem te pagar",      color: "#BC4B2E" },
+];
+
+const QUESTIONS = [
+  // PAIXÃO
+  { pillar: "paixao", text: "Num fim de semana livre, o que mais te dá energia?", options: [
+    { label: "Criar algo do zero — desenho, texto, projeto", w: { criativo: 2 } },
+    { label: "Resolver um quebra-cabeça ou entender como algo funciona", w: { analitico: 2 } },
+    { label: "Estar com pessoas, ouvir histórias, conversar", w: { social: 2 } },
+    { label: "Colocar a mão na massa: consertar, plantar, cozinhar", w: { pratico: 2 } },
+  ]},
+  { pillar: "paixao", text: "Se pudesse aprender algo novo agora, seria...", options: [
+    { label: "Uma nova tecnologia ou ferramenta digital", w: { tecnico: 2 } },
+    { label: "Uma forma de cuidar melhor das pessoas", w: { cuidado: 2 } },
+    { label: "Como organizar e liderar um projeto", w: { empreendedor: 2, estrutura: 1 } },
+    { label: "Uma técnica artística ou criativa", w: { criativo: 2 } },
+  ]},
+  { pillar: "paixao", text: "O que te deixa perdido no tempo, sem perceber as horas passarem?", options: [
+    { label: "Montar planilhas, analisar números, achar padrões", w: { analitico: 2 } },
+    { label: "Planejar algo até o mínimo detalhe", w: { estrutura: 2 } },
+    { label: "Construir ou consertar algo com as mãos", w: { pratico: 2 } },
+    { label: "Ajudar alguém a se sentir melhor", w: { cuidado: 2 } },
+  ]},
+  { pillar: "paixao", text: "Que tipo de conteúdo você mais consome por prazer?", options: [
+    { label: "Documentários de ciência e tecnologia", w: { tecnico: 1, analitico: 1 } },
+    { label: "Histórias de empreendedores e negócios", w: { empreendedor: 2 } },
+    { label: "Arte, design ou música", w: { criativo: 2 } },
+    { label: "Podcasts sobre comportamento e relações humanas", w: { social: 2 } },
+  ]},
+  // TALENTO
+  { pillar: "talento", text: "Amigos costumam te procurar quando precisam de...", options: [
+    { label: "Uma ideia criativa", w: { criativo: 2 } },
+    { label: "Uma análise fria e racional", w: { analitico: 2 } },
+    { label: "Um ombro amigo e um bom conselho", w: { cuidado: 2 } },
+    { label: "Alguém que resolve um problema prático", w: { pratico: 2 } },
+  ]},
+  { pillar: "talento", text: "Numa equipe de trabalho, você naturalmente...", options: [
+    { label: "Assume a liderança e a direção", w: { empreendedor: 2 } },
+    { label: "Organiza tarefas e prazos", w: { estrutura: 2 } },
+    { label: "Conecta as pessoas e media conflitos", w: { social: 2 } },
+    { label: "Mergulha nos detalhes técnicos", w: { tecnico: 2 } },
+  ]},
+  { pillar: "talento", text: "Em que tipo de desafio você se destaca?", options: [
+    { label: "Redação e argumentação", w: { social: 1, criativo: 1 } },
+    { label: "Lógica e matemática", w: { analitico: 2 } },
+    { label: "Provas práticas ou de laboratório", w: { pratico: 2 } },
+    { label: "Planejamento de longo prazo", w: { empreendedor: 1, estrutura: 1 } },
+  ]},
+  { pillar: "talento", text: "As pessoas costumam elogiar sua capacidade de...", options: [
+    { label: "Criar algo visualmente bonito", w: { criativo: 2 } },
+    { label: "Explicar algo complexo com clareza", w: { social: 1, analitico: 1 } },
+    { label: "Cuidar de detalhes que ninguém percebe", w: { estrutura: 2 } },
+    { label: "Consertar ou construir coisas", w: { pratico: 2 } },
+  ]},
+  // MUNDO PRECISA
+  { pillar: "mundo", text: "Que tipo de problema do mundo mais te incomoda?", options: [
+    { label: "Falta de acesso à saúde e bem-estar", w: { cuidado: 2 } },
+    { label: "Desigualdade social e educação", w: { social: 2, cuidado: 1 } },
+    { label: "Atraso tecnológico e ineficiência", w: { tecnico: 2 } },
+    { label: "Falta de organização e planejamento", w: { estrutura: 2 } },
+  ]},
+  { pillar: "mundo", text: "Se pudesse resolver um problema global, escolheria...", options: [
+    { label: "Mudanças climáticas e meio ambiente", w: { pratico: 1, tecnico: 1 } },
+    { label: "Saúde mental", w: { cuidado: 2 } },
+    { label: "Inovação tecnológica lenta", w: { tecnico: 2 } },
+    { label: "Falta de oportunidades econômicas", w: { empreendedor: 2 } },
+  ]},
+  { pillar: "mundo", text: "Qual causa você defenderia de graça?", options: [
+    { label: "Educação de qualidade para todos", w: { cuidado: 1, social: 1 } },
+    { label: "Acesso à arte e cultura", w: { criativo: 2 } },
+    { label: "Empreendedorismo e geração de renda", w: { empreendedor: 2 } },
+    { label: "Ciência e pesquisa", w: { analitico: 2 } },
+  ]},
+  { pillar: "mundo", text: "O mundo precisa de mais gente que...", options: [
+    { label: "Cuide dos outros com empatia", w: { cuidado: 2 } },
+    { label: "Pense fora da caixa", w: { criativo: 2 } },
+    { label: "Organize o caos", w: { estrutura: 2 } },
+    { label: "Assuma riscos e crie algo novo", w: { empreendedor: 2 } },
+  ]},
+  // RETORNO
+  { pillar: "retorno", text: "Que tipo de trabalho imagina te pagando bem no futuro?", options: [
+    { label: "Um negócio próprio", w: { empreendedor: 2 } },
+    { label: "Uma carreira técnica especializada", w: { tecnico: 2 } },
+    { label: "Uma profissão de cuidado ou saúde", w: { cuidado: 2 } },
+    { label: "Uma carreira criativa reconhecida", w: { criativo: 2 } },
+  ]},
+  { pillar: "retorno", text: "Se tivesse que vender um serviço, seria...", options: [
+    { label: "Consultoria e análise", w: { analitico: 2 } },
+    { label: "Design ou criação", w: { criativo: 2 } },
+    { label: "Serviço prático — conserto, construção, culinária", w: { pratico: 2 } },
+    { label: "Acompanhamento e cuidado personalizado", w: { cuidado: 2 } },
+  ]},
+  { pillar: "retorno", text: "Você prefere ser remunerado por...", options: [
+    { label: "Resultados de negócio", w: { empreendedor: 2 } },
+    { label: "Projetos estruturados e recorrentes", w: { estrutura: 2 } },
+    { label: "Impacto direto na vida das pessoas", w: { cuidado: 2, social: 1 } },
+    { label: "Entregas técnicas e especializadas", w: { tecnico: 2 } },
+  ]},
+  { pillar: "retorno", text: "Qual ambiente combina com sua ideia de sucesso financeiro?", options: [
+    { label: "Escritório técnico ou laboratório", w: { tecnico: 2 } },
+    { label: "Consultório ou clínica", w: { cuidado: 2 } },
+    { label: "Estúdio criativo", w: { criativo: 2 } },
+    { label: "Empresa própria ou startup", w: { empreendedor: 2 } },
+  ]},
+];
+
+const CAREERS = [
+  { name: "Designer de Produto", emoji: "🎨", desc: "Transforma ideias abstratas em telas e objetos que as pessoas tocam todo dia.", v: { criativo:3, tecnico:2, analitico:1, estrutura:1 } },
+  { name: "Cientista de Dados", emoji: "📊", desc: "Encontra histórias escondidas dentro de números que ninguém mais sabe ler.", v: { analitico:3, tecnico:3, estrutura:1 } },
+  { name: "Médico(a)", emoji: "🩺", desc: "Junta ciência e cuidado para devolver saúde a quem precisa.", v: { cuidado:3, analitico:2, tecnico:1 } },
+  { name: "Professor(a)", emoji: "📚", desc: "Planta ideias que crescem na cabeça dos outros por décadas.", v: { cuidado:2, social:3, estrutura:1 } },
+  { name: "Psicólogo(a)", emoji: "🧠", desc: "Ajuda pessoas a entenderem a própria mente e reescreverem sua história.", v: { cuidado:3, social:3, analitico:1 } },
+  { name: "Engenheiro(a) de Software", emoji: "💻", desc: "Constrói sistemas invisíveis que sustentam o mundo digital.", v: { tecnico:3, analitico:2, estrutura:1 } },
+  { name: "Empreendedor(a)", emoji: "🚀", desc: "Cria algo do zero e assume o risco de fazer dar certo.", v: { empreendedor:3, social:2, criativo:1 } },
+  { name: "Terapeuta Ocupacional", emoji: "🤲", desc: "Devolve autonomia e função a quem perdeu parte dela.", v: { cuidado:3, pratico:2, social:2 } },
+  { name: "Arquiteto(a)", emoji: "🏛️", desc: "Desenha os espaços onde a vida das pessoas vai acontecer.", v: { criativo:3, tecnico:2, estrutura:2 } },
+  { name: "Chef de Cozinha", emoji: "🍳", desc: "Transforma ingredientes crus em memórias afetivas.", v: { criativo:2, pratico:3, empreendedor:1 } },
+  { name: "Advogado(a)", emoji: "⚖️", desc: "Usa argumentos e lógica para defender o que é justo.", v: { analitico:3, social:2, estrutura:2 } },
+  { name: "Jornalista", emoji: "📰", desc: "Investiga e conta histórias que o público precisa conhecer.", v: { social:3, criativo:2, analitico:1 } },
+  { name: "Fisioterapeuta", emoji: "🦵", desc: "Devolve movimento a corpos que perderam parte dele.", v: { cuidado:3, pratico:2, tecnico:1 } },
+  { name: "Consultor(a) de Negócios", emoji: "📈", desc: "Enxerga o problema real por trás dos números de uma empresa.", v: { empreendedor:3, analitico:2, social:2 } },
+  { name: "Artista Plástico(a)", emoji: "🎭", desc: "Traduz o que sente em algo que os outros também podem sentir.", v: { criativo:3, pratico:1 } },
+  { name: "Engenheiro(a) Civil", emoji: "🏗️", desc: "Projeta estruturas que sustentam cidades inteiras com segurança.", v: { tecnico:3, estrutura:3, pratico:1 } },
+  { name: "Assistente Social", emoji: "🤝", desc: "Conecta pessoas vulneráveis às redes de apoio que precisam.", v: { cuidado:3, social:3, estrutura:1 } },
+  { name: "Product Manager", emoji: "🧭", desc: "Traduz necessidades reais em decisões de produto certeiras.", v: { empreendedor:2, analitico:2, social:2, estrutura:2 } },
+  { name: "Veterinário(a)", emoji: "🐾", desc: "Cuida de quem não consegue explicar com palavras o que dói.", v: { cuidado:3, tecnico:2, pratico:2 } },
+  { name: "Pesquisador(a) Acadêmico(a)", emoji: "🔬", desc: "Empurra os limites do que a humanidade sabe, um estudo de cada vez.", v: { analitico:3, criativo:1, estrutura:2 } },
+  { name: "Profissional de Marketing", emoji: "📣", desc: "Encontra a história certa para a marca certa contar.", v: { criativo:2, social:2, empreendedor:2 } },
+  { name: "Agrônomo(a) / Produtor(a) Rural", emoji: "🌾", desc: "Faz a terra produzir o alimento que chega à mesa de todo mundo.", v: { pratico:3, tecnico:1, estrutura:1 } },
+  { name: "Enfermeiro(a)", emoji: "💉", desc: "Está ao lado do paciente nos momentos mais frágeis da vida dele.", v: { cuidado:3, tecnico:1, pratico:2, estrutura:1 } },
+  { name: "UX Designer", emoji: "🖱️", desc: "Torna produtos complexos simples de usar e agradáveis de sentir.", v: { criativo:2, tecnico:2, social:1, analitico:1 } },
+  { name: "Engenheiro(a) de Dados", emoji: "🗄️", desc: "Constrói os canos por onde os dados fluem até quem precisa deles.", v: { tecnico:3, analitico:2, estrutura:2 } },
+  { name: "Especialista em Inteligência Artificial", emoji: "🤖", desc: "Ensina máquinas a reconhecer padrões que humanos levariam anos para ver.", v: { tecnico:3, analitico:3 } },
+  { name: "Desenvolvedor(a) de Jogos", emoji: "🎮", desc: "Cria mundos inteiros onde as pessoas escolhem se perder de propósito.", v: { criativo:2, tecnico:3 } },
+  { name: "Criador(a) de Conteúdo Digital", emoji: "🎥", desc: "Transforma a própria voz em audiência, marca e sustento.", v: { criativo:3, social:2, empreendedor:1 } },
+  { name: "Cientista Ambiental", emoji: "🌍", desc: "Trabalha para que o planeta ainda exista do jeito que a gente conhece.", v: { analitico:2, pratico:2, tecnico:1 } },
+  { name: "Fotógrafo(a)", emoji: "📷", desc: "Congela um instante antes que ele desapareça para sempre.", v: { criativo:3, pratico:1 } },
+  { name: "Músico(a) / Produtor(a) Musical", emoji: "🎵", desc: "Organiza som e silêncio até virarem emoção.", v: { criativo:3, tecnico:1 } },
+  { name: "Nutricionista", emoji: "🥗", desc: "Usa ciência da alimentação para mudar a saúde de alguém, um prato de cada vez.", v: { cuidado:2, analitico:2, social:1 } },
+  { name: "Educador(a) Físico(a)", emoji: "🏋️", desc: "Transforma disciplina física em confiança para a vida toda.", v: { cuidado:2, pratico:2, social:1 } },
+  { name: "Tradutor(a) / Intérprete", emoji: "🌐", desc: "Faz duas línguas se entenderem sem perder o que foi realmente dito.", v: { social:2, analitico:2, criativo:1 } },
+  { name: "Roteirista", emoji: "🎬", desc: "Constrói histórias que fazem estranhos sentirem a mesma coisa ao mesmo tempo.", v: { criativo:3, social:1 } },
+  { name: "Analista Financeiro(a) / Investidor(a)", emoji: "💹", desc: "Lê o futuro de uma empresa através dos números de hoje.", v: { analitico:3, empreendedor:2 } },
+  { name: "Eletricista / Técnico(a) Especializado(a)", emoji: "⚡", desc: "Resolve, com as mãos, problemas que param a vida de todo mundo.", v: { pratico:3, tecnico:2 } },
+  { name: "Piloto(a) de Avião", emoji: "✈️", desc: "Carrega a responsabilidade de centenas de vidas em cada voo.", v: { tecnico:2, pratico:2, estrutura:2 } },
+  { name: "Diplomata", emoji: "🕊️", desc: "Negocia com palavras o que ninguém quer resolver na força.", v: { social:3, analitico:1, estrutura:1 } },
+  { name: "Bibliotecário(a) / Curador(a)", emoji: "📖", desc: "Organiza o conhecimento humano para que ele não se perca.", v: { estrutura:2, analitico:1, criativo:1 } },
+];
+
+function similarity(scores, v) {
+  let dot = 0, a = 0, b = 0;
+  for (const k of AXES) {
+    const s = scores[k] || 0, w = v[k] || 0;
+    dot += s * w; a += s * s; b += w * w;
+  }
+  if (a === 0 || b === 0) return 0;
+  return dot / (Math.sqrt(a) * Math.sqrt(b));
+}
+
+/* ---------------------------------------------------------
+   Sound (Tone.js) — optional, fails silently
+--------------------------------------------------------- */
+function useSound() {
+  const synthRef = useRef(null);
+  const readyRef = useRef(false);
+
+  const ensure = useCallback(async () => {
+    if (readyRef.current) return;
+    try {
+      await Tone.start();
+      synthRef.current = new Tone.Synth({ oscillator: { type: "triangle" }, envelope: { attack: 0.001, decay: 0.15, sustain: 0, release: 0.1 } }).toDestination();
+      readyRef.current = true;
+    } catch (e) { /* silent */ }
+  }, []);
+
+  const tick = useCallback(() => {
+    try { synthRef.current?.triggerAttackRelease("C6", "32n"); } catch (e) {}
+  }, []);
+
+  const chime = useCallback(() => {
+    try {
+      const synth = synthRef.current;
+      if (!synth) return;
+      const now = Tone.now();
+      synth.triggerAttackRelease("E5", "16n", now);
+      synth.triggerAttackRelease("G5", "16n", now + 0.1);
+      synth.triggerAttackRelease("C6", "8n", now + 0.2);
+    } catch (e) {}
+  }, []);
+
+  return { ensure, tick, chime };
+}
+
+/* ---------------------------------------------------------
+   Ikigai diagram — four converging circles
+--------------------------------------------------------- */
+function IkigaiDiagram({ revealed, size = 220, showStamp = false, stampText = "" }) {
+  const pos = [
+    { top: "0%", left: "0%" },
+    { top: "0%", left: "34%" },
+    { top: "34%", left: "0%" },
+    { top: "34%", left: "34%" },
+  ];
+  const dia = size * 0.66;
+  return (
+    <div style={{ position: "relative", width: size, height: size, margin: "0 auto" }}>
+      {PILLARS.map((p, i) => (
+        <div
+          key={p.key}
+          style={{
+            position: "absolute",
+            top: pos[i].top,
+            left: pos[i].left,
+            width: dia,
+            height: dia,
+            borderRadius: "9999px",
+            background: p.color,
+            opacity: 0.62,
+            mixBlendMode: "multiply",
+            transform: revealed[i] ? "scale(1)" : "scale(0)",
+            transition: "transform 0.7s cubic-bezier(.34,1.56,.64,1)",
+            transitionDelay: `${i * 0.08}s`,
+          }}
+        />
+      ))}
+      {showStamp && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            textAlign: "center",
+            padding: "8%",
+          }}
+        >
+          <div
+            style={{
+              fontFamily: "'Shippori Mincho', serif",
+              color: "#F4EDDD",
+              fontSize: size * 0.09,
+              fontWeight: 700,
+              lineHeight: 1.15,
+              textShadow: "0 1px 4px rgba(0,0,0,0.5)",
+              animation: "stampIn 0.5s cubic-bezier(.2,1.6,.4,1) 1.1s both",
+            }}
+          >
+            {stampText}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------
+   Main App
+--------------------------------------------------------- */
+function IkigaiApp() {
+  const [stage, setStage] = useState("intro"); // intro | quiz | interstitial | loading | result
+  const [qIndex, setQIndex] = useState(0);
+  const [answers, setAnswers] = useState(() => Array(QUESTIONS.length).fill(null)); // stores chosen option index per question
+  const [justCompletedPillar, setJustCompletedPillar] = useState(null);
+  const sound = useSound();
+
+  const totalQ = QUESTIONS.length;
+  const pillarOfIndex = (i) => Math.min(3, Math.floor(i / 4));
+  const revealed = [0, 1, 2, 3].map(p => pillarOfIndex(qIndex) > p || (stage === "loading" || stage === "result"));
+
+  const scores = useMemo(() => {
+    const s = Object.fromEntries(AXES.map(a => [a, 0]));
+    answers.forEach((optIdx, qi) => {
+      if (optIdx == null) return;
+      const w = QUESTIONS[qi].options[optIdx].w;
+      for (const k of Object.keys(w)) s[k] = (s[k] || 0) + w[k];
+    });
+    return s;
+  }, [answers]);
+
+  const results = useMemo(() => {
+    const ranked = CAREERS.map(c => ({ ...c, score: similarity(scores, c.v) })).sort((a, b) => b.score - a.score);
+    return ranked.slice(0, 3);
+  }, [scores, stage]);
+
+  const topAxes = useMemo(() => {
+    return [...AXES].sort((a, b) => scores[b] - scores[a]).slice(0, 3);
+  }, [scores, stage]);
+
+  const maxAxisScore = Math.max(1, ...AXES.map(a => scores[a]));
+
+  const start = async () => {
+    await sound.ensure();
+    setStage("quiz");
+  };
+
+  const selectOption = (optIdx) => {
+    sound.tick();
+    setAnswers(prev => {
+      const next = [...prev];
+      next[qIndex] = optIdx;
+      return next;
+    });
+    const nextIndex = qIndex + 1;
+    if (nextIndex % 4 === 0 && nextIndex < totalQ) {
+      setJustCompletedPillar(PILLARS[pillarOfIndex(qIndex)]);
+      setStage("interstitial");
+      setTimeout(() => {
+        setQIndex(nextIndex);
+        setStage("quiz");
+      }, 1300);
+    } else if (nextIndex >= totalQ) {
+      setQIndex(nextIndex);
+      setStage("loading");
+      sound.chime();
+      setTimeout(() => setStage("result"), 2200);
+    } else {
+      setQIndex(nextIndex);
+    }
+  };
+
+  const goBack = () => {
+    if (qIndex === 0) return;
+    sound.tick();
+    setQIndex(qIndex - 1);
+  };
+
+  const restart = () => {
+    setAnswers(Array(QUESTIONS.length).fill(null));
+    setQIndex(0);
+    setStage("intro");
+  };
+
+  const copyResult = async () => {
+    const top = results[0];
+    const text = `Meu Ikigai apontou: ${top.name} ${top.emoji}\n${top.desc}\nTraços dominantes: ${topAxes.map(a => AXIS_LABEL[a]).join(", ")}.`;
+    try { await navigator.clipboard.writeText(text); } catch (e) {}
+  };
+
+  const q = QUESTIONS[qIndex];
+  const pillar = q ? PILLARS[pillarOfIndex(qIndex)] : null;
+  const qInPillar = qIndex % 4;
+
+  return (
+    <div style={styles.page}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap');
+        * { box-sizing: border-box; }
+        @keyframes fadeUp { from { opacity:0; transform: translateY(14px);} to { opacity:1; transform: translateY(0);} }
+        @keyframes stampIn { from { opacity:0; transform: scale(1.5) rotate(-6deg);} to { opacity:1; transform: scale(1) rotate(-4deg);} }
+        @keyframes pulseRing { 0%,100% { transform: scale(1);} 50% { transform: scale(1.06);} }
+        @keyframes floatSlow { 0%,100% { transform: translateY(0);} 50% { transform: translateY(-6px);} }
+        .fade-up { animation: fadeUp 0.45s ease both; }
+        .opt-btn { transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease; }
+        .opt-btn:active { transform: scale(0.97); }
+        .opt-btn:hover { border-color: #201D18; box-shadow: 0 4px 0 0 #201D18; }
+        .primary-btn { transition: transform .15s ease; }
+        .primary-btn:active { transform: scale(0.96); }
+      `}</style>
+
+      <div style={styles.card}>
+        {stage === "intro" && (
+          <div className="fade-up" style={{ textAlign: "center" }}>
+            <div style={{ animation: "floatSlow 4s ease-in-out infinite" }}>
+              <IkigaiDiagram revealed={[true, true, true, true]} size={190} />
+            </div>
+            <div style={styles.eyebrow}>生き甲斐 · uma jornada de 16 perguntas</div>
+            <h1 style={styles.h1}>Ikigai</h1>
+            <p style={styles.p}>
+              Quatro círculos. Quatro perguntas sobre você. No centro deles mora a razão
+              pela qual você acorda de manhã — e um caminho de carreira que combina com ela.
+            </p>
+            <button className="primary-btn" style={styles.primaryBtn} onClick={start}>
+              Começar minha jornada
+            </button>
+            <div style={styles.pillarLegend}>
+              {PILLARS.map(p => (
+                <div key={p.key} style={styles.legendItem}>
+                  <span style={{ ...styles.dot, background: p.color }} />
+                  {p.label}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {stage === "quiz" && q && (
+          <div key={qIndex} className="fade-up">
+            <div style={styles.topRow}>
+              {qIndex > 0 ? (
+                <button style={styles.backBtn} onClick={goBack} aria-label="Voltar">←</button>
+              ) : (
+                <div style={{ width: 34 }} />
+              )}
+              <IkigaiDiagram revealed={revealed} size={56} />
+              <div style={{ flex: 1, marginLeft: 12 }}>
+                <div style={{ ...styles.pillarTag, color: pillar.color, borderColor: pillar.color }}>
+                  {pillar.label} · {pillar.sub}
+                </div>
+                <div style={styles.progressTrack}>
+                  <div style={{ ...styles.progressFill, width: `${((qIndex) / totalQ) * 100}%`, background: pillar.color }} />
+                </div>
+                <div style={styles.progressLabel}>Pergunta {qInPillar + 1} de 4 · nesta etapa</div>
+              </div>
+            </div>
+
+            <h2 style={styles.question}>{q.text}</h2>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 18 }}>
+              {q.options.map((opt, i) => (
+                <button
+                  key={i}
+                  className="opt-btn"
+                  style={answers[qIndex] === i ? styles.optBtnSelected : styles.optBtn}
+                  onClick={() => selectOption(i)}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {stage === "interstitial" && justCompletedPillar && (
+          <div className="fade-up" style={{ textAlign: "center", padding: "40px 0" }}>
+            <div style={{ fontSize: 44, animation: "pulseRing 1.1s ease-in-out infinite" }}>◎</div>
+            <div style={{ ...styles.eyebrow, color: justCompletedPillar.color }}>etapa concluída</div>
+            <h2 style={{ ...styles.h1, fontSize: 28, color: justCompletedPillar.color }}>
+              {justCompletedPillar.label} mapeado ✓
+            </h2>
+            <p style={styles.p}>Seguindo para a próxima peça do seu Ikigai...</p>
+          </div>
+        )}
+
+        {stage === "loading" && (
+          <div className="fade-up" style={{ textAlign: "center", padding: "30px 0" }}>
+            <div style={{ animation: "pulseRing 1s ease-in-out infinite" }}>
+              <IkigaiDiagram revealed={[true, true, true, true]} size={190} />
+            </div>
+            <p style={{ ...styles.p, marginTop: 18 }}>Calculando seu Ikigai...</p>
+          </div>
+        )}
+
+        {stage === "result" && results.length > 0 && (
+          <div className="fade-up" style={{ textAlign: "center" }}>
+            <div style={styles.eyebrow}>seu ikigai revelou</div>
+            <IkigaiDiagram revealed={[true, true, true, true]} size={190} showStamp stampText={results[0].name} />
+            <div style={{ fontSize: 40, marginTop: 6 }}>{results[0].emoji}</div>
+            <h1 style={styles.h1}>{results[0].name}</h1>
+            <p style={styles.p}>{results[0].desc}</p>
+
+            <div style={styles.badgeRow}>
+              {topAxes.map(a => (
+                <span key={a} style={styles.badge}>{AXIS_LABEL[a]}</span>
+              ))}
+            </div>
+
+            <div style={{ textAlign: "left", margin: "22px 0" }}>
+              {AXES.filter(a => scores[a] > 0).sort((a,b)=>scores[b]-scores[a]).slice(0,5).map(a => (
+                <div key={a} style={{ marginBottom: 8 }}>
+                  <div style={styles.barLabel}>{AXIS_LABEL[a]}</div>
+                  <div style={styles.barTrack}>
+                    <div style={{ ...styles.barFill, width: `${(scores[a]/maxAxisScore)*100}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ borderTop: "1px dashed #C9BCA2", margin: "20px 0", paddingTop: 18 }}>
+              <div style={styles.eyebrow}>outros caminhos que também combinam</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 10 }}>
+                {results.slice(1).map(r => (
+                  <div key={r.name} style={styles.altCard}>
+                    <span style={{ fontSize: 22, marginRight: 10 }}>{r.emoji}</span>
+                    <div style={{ textAlign: "left" }}>
+                      <div style={{ fontWeight: 700 }}>{r.name}</div>
+                      <div style={{ fontSize: 13, color: "#5A5346" }}>{r.desc}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <button className="primary-btn" style={styles.primaryBtn} onClick={restart}>
+              Refazer a jornada
+            </button>
+            <button className="primary-btn" style={styles.secondaryBtn} onClick={copyResult}>
+              Copiar resultado
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------
+   Styles
+--------------------------------------------------------- */
+const styles = {
+  page: {
+    minHeight: "100vh",
+    background: "#EAE1D0",
+    fontFamily: "'Zen Kaku Gothic New', sans-serif",
+    color: "#201D18",
+    display: "flex",
+    alignItems: "flex-start",
+    justifyContent: "center",
+    padding: "28px 14px",
+  },
+  card: {
+    width: "100%",
+    maxWidth: 440,
+    background: "#F4EDDD",
+    borderRadius: 18,
+    padding: "26px 22px 28px",
+    boxShadow: "0 10px 30px rgba(32,29,24,0.12)",
+    border: "1px solid #DCD0B4",
+  },
+  eyebrow: {
+    fontSize: 12,
+    letterSpacing: "0.12em",
+    textTransform: "uppercase",
+    color: "#8A7F63",
+    fontWeight: 700,
+    marginTop: 10,
+  },
+  h1: {
+    fontFamily: "'Shippori Mincho', serif",
+    fontSize: 34,
+    margin: "6px 0 10px",
+    color: "#201D18",
+  },
+  p: {
+    fontSize: 15,
+    lineHeight: 1.55,
+    color: "#5A5346",
+    margin: "0 0 18px",
+  },
+  primaryBtn: {
+    background: "#201D18",
+    color: "#F4EDDD",
+    border: "none",
+    borderRadius: 999,
+    padding: "14px 26px",
+    fontSize: 15,
+    fontWeight: 700,
+    cursor: "pointer",
+    width: "100%",
+    fontFamily: "inherit",
+  },
+  secondaryBtn: {
+    background: "transparent",
+    color: "#201D18",
+    border: "1px solid #C9BCA2",
+    borderRadius: 999,
+    padding: "12px 26px",
+    fontSize: 14,
+    fontWeight: 600,
+    cursor: "pointer",
+    width: "100%",
+    marginTop: 10,
+    fontFamily: "inherit",
+  },
+  pillarLegend: {
+    display: "flex",
+    justifyContent: "center",
+    gap: 14,
+    flexWrap: "wrap",
+    marginTop: 18,
+  },
+  legendItem: {
+    display: "flex",
+    alignItems: "center",
+    gap: 6,
+    fontSize: 12,
+    color: "#5A5346",
+  },
+  dot: { width: 9, height: 9, borderRadius: "999px", display: "inline-block" },
+  topRow: { display: "flex", alignItems: "center" },
+  pillarTag: {
+    display: "inline-block",
+    fontSize: 12,
+    fontWeight: 700,
+    border: "1px solid",
+    borderRadius: 999,
+    padding: "3px 10px",
+    marginBottom: 8,
+  },
+  progressTrack: {
+    height: 6,
+    background: "#E3D8BE",
+    borderRadius: 999,
+    overflow: "hidden",
+  },
+  progressFill: { height: "100%", borderRadius: 999, transition: "width .4s ease" },
+  progressLabel: { fontSize: 11, color: "#8A7F63", marginTop: 5 },
+  question: {
+    fontFamily: "'Shippori Mincho', serif",
+    fontSize: 22,
+    lineHeight: 1.35,
+    marginTop: 22,
+  },
+  optBtn: {
+    textAlign: "left",
+    background: "#FFFDF6",
+    border: "1px solid #DCD0B4",
+    borderRadius: 12,
+    padding: "14px 16px",
+    fontSize: 14.5,
+    color: "#201D18",
+    cursor: "pointer",
+    fontFamily: "inherit",
+  },
+  optBtnSelected: {
+    textAlign: "left",
+    background: "#201D18",
+    border: "1px solid #201D18",
+    borderRadius: 12,
+    padding: "14px 16px",
+    fontSize: 14.5,
+    color: "#F4EDDD",
+    cursor: "pointer",
+    fontFamily: "inherit",
+    fontWeight: 700,
+  },
+  backBtn: {
+    width: 34,
+    height: 34,
+    minWidth: 34,
+    borderRadius: 999,
+    border: "1px solid #DCD0B4",
+    background: "#FFFDF6",
+    color: "#201D18",
+    fontSize: 16,
+    cursor: "pointer",
+    marginRight: 8,
+  },
+  badgeRow: { display: "flex", justifyContent: "center", gap: 8, flexWrap: "wrap", margin: "14px 0" },
+  badge: {
+    background: "#201D18",
+    color: "#F4EDDD",
+    fontSize: 12,
+    fontWeight: 700,
+    padding: "5px 12px",
+    borderRadius: 999,
+  },
+  barLabel: { fontSize: 12, color: "#5A5346", marginBottom: 3 },
+  barTrack: { height: 8, background: "#E3D8BE", borderRadius: 999, overflow: "hidden" },
+  barFill: { height: "100%", background: "#BC4B2E", borderRadius: 999, transition: "width .6s ease" },
+  altCard: {
+    display: "flex",
+    alignItems: "center",
+    background: "#FFFDF6",
+    border: "1px solid #DCD0B4",
+    borderRadius: 12,
+    padding: "10px 12px",
+  },
+};
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<IkigaiApp />);
+</script>
+</body>
+</html>
