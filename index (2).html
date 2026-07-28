@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<title>Ikigai — Encontre seu propósito</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500&family=Sora:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #12131c;
+    --bg-soft: #181a26;
+    --card: #1e2030;
+    --card-border: #2c2f45;
+    --text: #f2efe8;
+    --text-dim: #babcd1;
+
+    --c-paixao: #ff6b6b;
+    --c-talento: #4d96ff;
+    --c-mundo: #6bcb77;
+    --c-dinheiro: #ffd93d;
+
+    --a-criador: #ff6b6b;
+    --a-investigador: #4d96ff;
+    --a-cuidador: #6bcb77;
+    --a-estrategista: #ffd93d;
+    --a-comunicador: #c792ea;
+    --a-construtor: #ff9f5a;
+  }
+  html{ color-scheme: dark; }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{
+    background-color: #12131c;
+    color: var(--text);
+    font-family: 'Sora', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  body{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    min-height:100vh;
+    padding: 24px 16px;
+    background:
+      radial-gradient(circle at 20% 15%, rgba(255,107,107,0.08), transparent 40%),
+      radial-gradient(circle at 80% 20%, rgba(77,150,255,0.08), transparent 40%),
+      radial-gradient(circle at 25% 85%, rgba(107,203,119,0.08), transparent 40%),
+      radial-gradient(circle at 80% 85%, rgba(255,217,61,0.08), transparent 40%),
+      var(--bg);
+  }
+  .app{
+    width:100%;
+    max-width: 560px;
+    position:relative;
+    isolation: isolate;
+  }
+  h1,h2,h3{ font-family:'Fraunces', serif; font-weight:600; letter-spacing:-0.01em; }
+  .screen{ display:none; animation: fadeUp .5s ease both; }
+  .screen.active{ display:block; }
+  @keyframes fadeUp{
+    from{ opacity:0; transform: translateY(14px); }
+    to{ opacity:1; transform: translateY(0); }
+  }
+
+  /* ---------- Venn diagram ---------- */
+  .venn-wrap{
+    position:relative;
+    width: 260px;
+    height: 260px;
+    margin: 0 auto;
+    isolation: isolate;
+  }
+  .venn-wrap.small{ width:120px; height:120px; }
+  .venn-wrap svg{ width:100%; height:100%; overflow:visible; }
+  .venn-circle{
+    transition: fill-opacity 1s ease, stroke-opacity 1s ease;
+  }
+  .venn-label{
+    font-family:'Sora',sans-serif;
+    font-size: 8.5px;
+    font-weight:700;
+    fill: var(--text);
+    opacity:0;
+    transition: opacity .6s ease;
+    text-transform:uppercase;
+    letter-spacing: 0.04em;
+  }
+  .venn-wrap.small .venn-label{ display:none; }
+  .venn-center-glow{
+    opacity:0;
+    transition: opacity 1.2s ease;
+  }
+  .venn-center-text{
+    font-family:'Fraunces', serif;
+    font-size: 15px;
+    font-weight:700;
+    fill: var(--text);
+    text-anchor:middle;
+    opacity:0;
+    transition: opacity 1s ease .3s;
+    letter-spacing: 0.03em;
+  }
+
+  /* ---------- Hero ---------- */
+  .hero{ text-align:center; }
+  .eyebrow{
+    font-size:12px;
+    letter-spacing:0.18em;
+    text-transform:uppercase;
+    color: #e4e2d8;
+    margin-bottom: 18px;
+    font-weight:700;
+  }
+  .hero h1{
+    font-size: clamp(28px, 6vw, 38px);
+    line-height:1.15;
+    margin: 22px 0 14px;
+  }
+  .hero h1 em{ font-style:italic; color:var(--c-paixao); }
+  .hero p{
+    color: #d7d6cf;
+    font-size:15.5px;
+    font-weight:500;
+    line-height:1.65;
+    max-width: 420px;
+    margin: 0 auto 30px;
+  }
+  .legend{
+    display:flex;
+    justify-content:center;
+    gap:16px;
+    flex-wrap:wrap;
+    margin-bottom:30px;
+    font-size:12.5px;
+    font-weight:600;
+    color: #d7d6cf;
+  }
+  .legend span{ display:flex; align-items:center; gap:6px; }
+  .dot{ width:8px; height:8px; border-radius:50%; display:inline-block; }
+
+  button.primary{
+    background: var(--text);
+    color: var(--bg);
+    border:none;
+    font-family:'Sora',sans-serif;
+    font-weight:700;
+    font-size:15px;
+    padding: 15px 34px;
+    border-radius: 100px;
+    cursor:pointer;
+    transition: transform .15s ease, box-shadow .15s ease;
+    box-shadow: 0 0 0 0 rgba(242,239,232,0);
+  }
+  button.primary:hover{ transform: translateY(-2px); box-shadow: 0 8px 24px rgba(242,239,232,0.15); }
+  button.primary:active{ transform: translateY(0); }
+  button.primary:focus-visible{ outline: 2px solid var(--c-talento); outline-offset:3px; }
+
+  /* ---------- Quiz ---------- */
+  .quiz-header{
+    display:flex;
+    align-items:center;
+    gap:16px;
+    margin-bottom: 26px;
+  }
+  .quiz-meta{ flex:1; }
+  .pillar-tag{
+    font-size:11px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:0.12em;
+    margin-bottom:6px;
+  }
+  .q-count{ font-size:12px; color:var(--text-dim); }
+  .progress-track{
+    width:100%;
+    height:3px;
+    background: var(--card-border);
+    border-radius:3px;
+    margin-top:10px;
+    overflow:hidden;
+  }
+  .progress-fill{
+    height:100%;
+    background: var(--text);
+    border-radius:3px;
+    transition: width .5s ease;
+  }
+  .q-card{
+    background: var(--card);
+    border:1px solid var(--card-border);
+    border-radius: 20px;
+    padding: 28px 24px;
+  }
+  .q-card h2{
+    font-size: clamp(19px, 4vw, 22px);
+    line-height:1.35;
+    margin-bottom: 22px;
+    font-weight:600;
+  }
+  .options{ display:flex; flex-direction:column; gap:10px; }
+  .opt{
+    text-align:left;
+    background: var(--bg-soft);
+    border: 1px solid var(--card-border);
+    color: var(--text);
+    font-family:'Sora',sans-serif;
+    font-size:14.5px;
+    line-height:1.45;
+    padding: 14px 16px;
+    border-radius: 12px;
+    cursor:pointer;
+    transition: border-color .15s ease, background .15s ease, transform .1s ease;
+  }
+  .opt:hover{ border-color: var(--text-dim); background:#20222f; }
+  .opt:active{ transform: scale(0.99); }
+  .opt.chosen{ border-color: var(--text); background:#232537; }
+  .opt:focus-visible{ outline: 2px solid var(--c-talento); outline-offset:2px; }
+
+  .back-link{
+    display:inline-block;
+    margin-top:18px;
+    font-size:12px;
+    color: var(--text-dim);
+    cursor:pointer;
+    background:none;
+    border:none;
+    font-family:'Sora',sans-serif;
+  }
+  .back-link:hover{ color:var(--text); }
+
+  /* ---------- Result ---------- */
+  .result{ text-align:center; }
+  .result .venn-wrap{ margin-bottom: 6px; }
+  .result-eyebrow{
+    font-size:12px;
+    letter-spacing:0.16em;
+    text-transform:uppercase;
+    color: var(--text-dim);
+    font-weight:600;
+    margin-top: 10px;
+  }
+  .profession{
+    font-size: clamp(30px,7vw,42px);
+    margin: 10px 0 6px;
+    background: linear-gradient(90deg, var(--arch-color, var(--c-paixao)), var(--text));
+    -webkit-background-clip:text;
+    background-clip:text;
+    -webkit-text-fill-color: transparent;
+  }
+  .archetype-name{
+    font-size:13px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:0.1em;
+    color: var(--arch-color, var(--c-paixao));
+    margin-bottom:22px;
+  }
+  .pitch{
+    font-size:15px;
+    line-height:1.7;
+    color:#d9d7ce;
+    text-align:left;
+    background: var(--card);
+    border:1px solid var(--card-border);
+    border-radius:18px;
+    padding:22px 22px;
+    margin-bottom:20px;
+  }
+  .pitch b{ color:var(--text); }
+
+  .breakdown{
+    text-align:left;
+    background: var(--card);
+    border:1px solid var(--card-border);
+    border-radius:18px;
+    padding:20px 22px;
+    margin-bottom:26px;
+  }
+  .breakdown h3{
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:0.1em;
+    color:var(--text-dim);
+    margin-bottom:14px;
+    font-family:'Sora',sans-serif;
+    font-weight:700;
+  }
+  .bar-row{ display:flex; align-items:center; gap:10px; margin-bottom:9px; }
+  .bar-row:last-child{ margin-bottom:0; }
+  .bar-label{ width:100px; font-size:12px; color:var(--text-dim); flex-shrink:0; }
+  .bar-track{ flex:1; height:8px; background:var(--bg-soft); border-radius:6px; overflow:hidden; }
+  .bar-fill{ height:100%; border-radius:6px; width:0%; transition: width 1s ease; }
+  .bar-val{ font-size:12px; color:var(--text-dim); width:18px; text-align:right; flex-shrink:0; }
+
+  .result-actions{ display:flex; justify-content:center; gap:14px; flex-wrap:wrap; }
+  button.ghost{
+    background:transparent;
+    border:1px solid var(--card-border);
+    color: var(--text);
+    font-family:'Sora',sans-serif;
+    font-weight:600;
+    font-size:14px;
+    padding: 13px 24px;
+    border-radius:100px;
+    cursor:pointer;
+    transition: border-color .15s ease;
+  }
+  button.ghost:hover{ border-color: var(--text); }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ============ SCREEN 1: HERO ============ -->
+  <section class="screen active" id="screen-hero">
+    <div class="hero">
+      <div class="eyebrow">Um teste, quatro círculos, uma resposta</div>
+      <div class="venn-wrap" id="venn-hero"></div>
+      <h1>Onde os quatro círculos <em>se encontram</em>, mora seu propósito.</h1>
+      <p>16 perguntas. Sem certo ou errado — só o que é verdade sobre você. No fim, revelamos a profissão que mais se aproxima do centro do seu Ikigai.</p>
+      <div class="legend">
+        <span><i class="dot" style="background:var(--c-paixao)"></i>O que você ama</span>
+        <span><i class="dot" style="background:var(--c-talento)"></i>No que é bom</span>
+        <span><i class="dot" style="background:var(--c-mundo)"></i>O que o mundo precisa</span>
+        <span><i class="dot" style="background:var(--c-dinheiro)"></i>Pelo que te pagam</span>
+      </div>
+      <button class="primary" onclick="startQuiz()">Começar meu Ikigai</button>
+    </div>
+  </section>
+
+  <!-- ============ SCREEN 2: QUIZ ============ -->
+  <section class="screen" id="screen-quiz">
+    <div class="quiz-header">
+      <div class="venn-wrap small" id="venn-quiz"></div>
+      <div class="quiz-meta">
+        <div class="pillar-tag" id="pillar-tag">Paixão</div>
+        <div class="q-count" id="q-count">Pergunta 1 de 16</div>
+        <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+      </div>
+    </div>
+    <div class="q-card">
+      <h2 id="q-text"></h2>
+      <div class="options" id="q-options"></div>
+    </div>
+    <button class="back-link" id="back-btn" onclick="goBack()">← Voltar</button>
+  </section>
+
+  <!-- ============ SCREEN 3: RESULT ============ -->
+  <section class="screen" id="screen-result">
+    <div class="result">
+      <div class="venn-wrap" id="venn-result"></div>
+      <div class="result-eyebrow">Seu ikigai aponta para</div>
+      <h2 class="profession" id="profession-name"></h2>
+      <div class="archetype-name" id="archetype-name"></div>
+      <div class="pitch" id="pitch"></div>
+      <div class="breakdown">
+        <h3>Como você pontuou em cada perfil</h3>
+        <div id="bars"></div>
+      </div>
+      <div class="result-actions">
+        <button class="primary" onclick="restart()">Refazer o teste</button>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+/* ================= VENN DIAGRAM ================= */
+function buildVenn(containerId, small){
+  const el = document.getElementById(containerId);
+  const s = small ? 120 : 260;
+  const r = small ? 42 : 92;
+  const cx = s/2, cy = s/2;
+  const offset = r * 0.62;
+  const circles = [
+    {key:'paixao',   cx: cx,          cy: cy - offset, color:'var(--c-paixao)',   label:'Ama'},
+    {key:'talento',  cx: cx + offset, cy: cy,           color:'var(--c-talento)',  label:'É bom'},
+    {key:'mundo',    cx: cx,          cy: cy + offset,  color:'var(--c-mundo)',    label:'Mundo precisa'},
+    {key:'dinheiro', cx: cx - offset, cy: cy,           color:'var(--c-dinheiro)', label:'Pagam por isso'}
+  ];
+  let svg = `<svg viewBox="0 0 ${s} ${s}">`;
+  circles.forEach(c=>{
+    svg += `<circle class="venn-circle" data-key="${c.key}" cx="${c.cx}" cy="${c.cy}" r="${r}"
+      fill="${c.color}" fill-opacity="0.08" stroke="${c.color}" stroke-opacity="0.5" stroke-width="1.5"/>`;
+  });
+  if(!small){
+    svg += `<circle class="venn-center-glow" cx="${cx}" cy="${cy}" r="${r*0.55}" fill="url(#glow-${containerId})"/>`;
+    svg += `<defs><radialGradient id="glow-${containerId}"><stop offset="0%" stop-color="#fff" stop-opacity="0.9"/><stop offset="100%" stop-color="#fff" stop-opacity="0"/></radialGradient></defs>`;
+    svg += `<text class="venn-center-text" x="${cx}" y="${cy+4}">IKIGAI</text>`;
+    circles.forEach(c=>{
+      const lx = cx + (c.cx-cx)*1.55;
+      const ly = cy + (c.cy-cy)*1.55;
+      svg += `<text class="venn-label" data-key="${c.key}" x="${lx}" y="${ly}" text-anchor="middle">${c.label}</text>`;
+    });
+  }
+  svg += `</svg>`;
+  el.innerHTML = svg;
+}
+buildVenn('venn-hero', false);
+buildVenn('venn-quiz', true);
+buildVenn('venn-result', false);
+
+function setVennProgress(containerId, counts){
+  // counts: {paixao:0-4, talento:0-4, mundo:0-4, dinheiro:0-4}
+  const el = document.getElementById(containerId);
+  if(!el) return;
+  Object.keys(counts).forEach(key=>{
+    const n = counts[key];
+    const frac = n/4;
+    const circ = el.querySelector(`.venn-circle[data-key="${key}"]`);
+    const label = el.querySelector(`.venn-label[data-key="${key}"]`);
+    if(circ){
+      circ.setAttribute('fill-opacity', (0.08 + frac*0.42).toFixed(2));
+      circ.setAttribute('stroke-opacity', (0.5 + frac*0.5).toFixed(2));
+    }
+    if(label && n>0){ label.style.opacity = 1; }
+  });
+  const total = Object.values(counts).reduce((a,b)=>a+b,0);
+  if(total >= 16){
+    const glow = el.querySelector('.venn-center-glow');
+    const txt = el.querySelector('.venn-center-text');
+    if(glow) glow.style.opacity = 1;
+    if(txt) txt.style.opacity = 1;
+  }
+}
+
+/* ================= DATA ================= */
+const PILLARS = ['paixao','talento','mundo','dinheiro'];
+const PILLAR_NAMES = {paixao:'Paixão', talento:'Talento', mundo:'Mundo precisa', dinheiro:'Retorno financeiro'};
+
+const QUESTIONS = [
+  // ---- PAIXÃO ----
+  {pillar:'paixao', text:'O que faz o tempo voar quando você está fazendo?', options:[
+    {t:'Criar algo do zero — um desenho, um texto, uma música, um design', a:'criador'},
+    {t:'Investigar como as coisas funcionam e entender o "porquê" por trás delas', a:'investigador'},
+    {t:'Estar perto de alguém e ajudar essa pessoa a se sentir melhor', a:'cuidador'},
+    {t:'Montar um plano e traçar o caminho até um objetivo grande', a:'estrategista'},
+    {t:'Contar uma boa história ou apresentar uma ideia pra alguém', a:'comunicador'},
+    {t:'Colocar a mão na massa e construir algo físico e concreto', a:'construtor'}
+  ]},
+  {pillar:'paixao', text:'Se você tivesse um dia inteiro livre, sem compromisso nenhum, o que escolheria fazer?', options:[
+    {t:'Desenhar, escrever, compor ou produzir algo autoral', a:'criador'},
+    {t:'Ler sobre um assunto que me deixa curioso até virar especialista amador', a:'investigador'},
+    {t:'Passar tempo de qualidade cuidando de alguém importante pra mim', a:'cuidador'},
+    {t:'Planejar o próximo passo de um projeto ou negócio', a:'estrategista'},
+    {t:'Gravar, postar ou compartilhar algo com uma audiência', a:'comunicador'},
+    {t:'Reformar, consertar ou montar algo em casa', a:'construtor'}
+  ]},
+  {pillar:'paixao', text:'Do que você mais gosta de falar quando está com amigos?', options:[
+    {t:'Ideias criativas, referências, projetos que quero fazer', a:'criador'},
+    {t:'Teorias, dados, notícias e "você sabia que..."', a:'investigador'},
+    {t:'As pessoas — como elas estão, o que sentem, como ajudar', a:'cuidador'},
+    {t:'Planos de futuro, metas, negócios e oportunidades', a:'estrategista'},
+    {t:'O que está acontecendo, cultura, tendências, opiniões', a:'comunicador'},
+    {t:'Como as coisas são feitas ou funcionam na prática', a:'construtor'}
+  ]},
+  {pillar:'paixao', text:'Que tipo de conteúdo você consome por puro prazer?', options:[
+    {t:'Arte, design, cinema, música — coisas feitas por outros criadores', a:'criador'},
+    {t:'Documentários, ciência, análises profundas de um tema', a:'investigador'},
+    {t:'Histórias de superação, desenvolvimento pessoal, relações humanas', a:'cuidador'},
+    {t:'Cases de negócio, biografias de empreendedores, estratégia', a:'estrategista'},
+    {t:'Podcasts, entrevistas, redes sociais, debates', a:'comunicador'},
+    {t:'Tutoriais práticos de "como fazer" e "como construir"', a:'construtor'}
+  ]},
+  // ---- TALENTO ----
+  {pillar:'talento', text:'As pessoas costumam te procurar pra pedir ajuda com o quê?', options:[
+    {t:'Uma ideia criativa ou uma solução original pra algo', a:'criador'},
+    {t:'Entender ou analisar algo complicado', a:'investigador'},
+    {t:'Um conselho ou apoio emocional', a:'cuidador'},
+    {t:'Organizar, decidir ou traçar um plano', a:'estrategista'},
+    {t:'Escrever, falar em público ou se comunicar melhor', a:'comunicador'},
+    {t:'Resolver algo prático ou técnico', a:'construtor'}
+  ]},
+  {pillar:'talento', text:'Em um trabalho em grupo, qual papel você assume naturalmente?', options:[
+    {t:'O que traz as ideias originais e a visão criativa', a:'criador'},
+    {t:'O que analisa os dados antes de qualquer decisão', a:'investigador'},
+    {t:'O que cuida do clima do grupo e mantém todo mundo bem', a:'cuidador'},
+    {t:'O que organiza o plano e cobra os prazos', a:'estrategista'},
+    {t:'O que apresenta o resultado pro resto do time', a:'comunicador'},
+    {t:'O que efetivamente executa e entrega a parte técnica', a:'construtor'}
+  ]},
+  {pillar:'talento', text:'O que os outros elogiam em você com mais frequência?', options:[
+    {t:'Minha criatividade e originalidade', a:'criador'},
+    {t:'Minha capacidade de entender coisas complexas', a:'investigador'},
+    {t:'Minha empatia e capacidade de escutar', a:'cuidador'},
+    {t:'Minha visão estratégica e capacidade de decidir', a:'estrategista'},
+    {t:'Minha facilidade de me comunicar e persuadir', a:'comunicador'},
+    {t:'Minha habilidade prática de fazer as coisas funcionarem', a:'construtor'}
+  ]},
+  {pillar:'talento', text:'Em qual dessas tarefas você se sai bem sem muito esforço?', options:[
+    {t:'Imaginar algo novo que ainda não existe', a:'criador'},
+    {t:'Encontrar padrões dentro de uma bagunça de informação', a:'investigador'},
+    {t:'Perceber quando alguém não está bem, mesmo sem dizer', a:'cuidador'},
+    {t:'Enxergar o quadro geral e antecipar próximos passos', a:'estrategista'},
+    {t:'Explicar algo difícil de um jeito simples', a:'comunicador'},
+    {t:'Consertar ou aperfeiçoar algo que já existe', a:'construtor'}
+  ]},
+  // ---- MUNDO PRECISA ----
+  {pillar:'mundo', text:'Qual problema do mundo mais te incomoda?', options:[
+    {t:'A falta de coisas bonitas, originais e bem feitas', a:'criador'},
+    {t:'A desinformação e a falta de rigor em decisões importantes', a:'investigador'},
+    {t:'A solidão e o sofrimento emocional das pessoas', a:'cuidador'},
+    {t:'A ineficiência e o desperdício de recursos e oportunidades', a:'estrategista'},
+    {t:'A falta de vozes representando certas ideias e causas', a:'comunicador'},
+    {t:'A quantidade de coisas mal construídas ou mal resolvidas', a:'construtor'}
+  ]},
+  {pillar:'mundo', text:'Se pudesse resolver um problema pra sempre, qual seria?', options:[
+    {t:'A falta de espaço pra expressão criativa das pessoas', a:'criador'},
+    {t:'Doenças ou desafios que faltam pesquisa e solução técnica', a:'investigador'},
+    {t:'Crianças ou pessoas sem apoio emocional e educacional', a:'cuidador'},
+    {t:'Empresas e projetos que fracassam por má gestão', a:'estrategista'},
+    {t:'A polarização e a falta de diálogo entre as pessoas', a:'comunicador'},
+    {t:'Infraestrutura ruim que afeta o dia a dia das pessoas', a:'construtor'}
+  ]},
+  {pillar:'mundo', text:'Que tipo de mudança você gostaria de ver na sua comunidade?', options:[
+    {t:'Mais espaços e incentivo pra arte e cultura local', a:'criador'},
+    {t:'Decisões públicas baseadas em dados e evidência', a:'investigador'},
+    {t:'Mais acolhimento pra quem está em situação vulnerável', a:'cuidador'},
+    {t:'Negócios locais mais organizados e sustentáveis', a:'estrategista'},
+    {t:'Mais informação de qualidade circulando entre as pessoas', a:'comunicador'},
+    {t:'Melhorias concretas de infraestrutura e serviços', a:'construtor'}
+  ]},
+  {pillar:'mundo', text:'Qual causa você defenderia sem pensar duas vezes?', options:[
+    {t:'Liberdade de expressão e valorização da arte', a:'criador'},
+    {t:'Ciência, educação e pensamento crítico', a:'investigador'},
+    {t:'Saúde mental e direitos de quem precisa de cuidado', a:'cuidador'},
+    {t:'Empreendedorismo e geração de oportunidades econômicas', a:'estrategista'},
+    {t:'Liberdade de imprensa e acesso à informação', a:'comunicador'},
+    {t:'Moradia, saneamento e infraestrutura digna', a:'construtor'}
+  ]},
+  // ---- RETORNO FINANCEIRO ----
+  {pillar:'dinheiro', text:'Pelo que as pessoas já te pagariam (ou pagaram) sem pestanejar?', options:[
+    {t:'Por um trabalho criativo ou uma peça original que eu fiz', a:'criador'},
+    {t:'Por uma análise, pesquisa ou solução técnica', a:'investigador'},
+    {t:'Por um cuidado, aula ou atendimento que eu ofereci', a:'cuidador'},
+    {t:'Por uma consultoria ou decisão estratégica que tomei', a:'estrategista'},
+    {t:'Por um conteúdo, texto ou apresentação que eu fiz', a:'comunicador'},
+    {t:'Por um serviço técnico ou algo que eu construí ou consertei', a:'construtor'}
+  ]},
+  {pillar:'dinheiro', text:'Se fosse abrir um negócio amanhã, em que área seria?', options:[
+    {t:'Um estúdio criativo — design, arte ou produção de conteúdo', a:'criador'},
+    {t:'Uma consultoria técnica ou de pesquisa aplicada', a:'investigador'},
+    {t:'Um serviço de cuidado, saúde, terapia ou educação', a:'cuidador'},
+    {t:'Uma empresa própria, do zero, em qualquer setor', a:'estrategista'},
+    {t:'Um canal, mídia ou agência de comunicação', a:'comunicador'},
+    {t:'Uma empresa de produtos, obras ou serviços técnicos', a:'construtor'}
+  ]},
+  {pillar:'dinheiro', text:'Que tipo de trabalho combina liberdade com uma boa renda, pra você?', options:[
+    {t:'Trabalho autoral, vendido pelo meu estilo e originalidade', a:'criador'},
+    {t:'Trabalho especializado, vendido pelo meu conhecimento técnico', a:'investigador'},
+    {t:'Trabalho de impacto direto na vida das pessoas', a:'cuidador'},
+    {t:'Meu próprio negócio, com resultado ligado à minha gestão', a:'estrategista'},
+    {t:'Trabalho com audiência própria ou marca pessoal', a:'comunicador'},
+    {t:'Trabalho técnico bem remunerado por habilidade prática', a:'construtor'}
+  ]},
+  {pillar:'dinheiro', text:'Numa entrevista de emprego, em qual área você "se vende" melhor?', options:[
+    {t:'Portfólio criativo e capacidade de gerar ideias originais', a:'criador'},
+    {t:'Capacidade analítica e domínio técnico de um assunto', a:'investigador'},
+    {t:'Inteligência emocional e capacidade de cuidar de pessoas', a:'cuidador'},
+    {t:'Visão de negócio e resultados que já entreguei', a:'estrategista'},
+    {t:'Comunicação, persuasão e presença', a:'comunicador'},
+    {t:'Habilidade prática e capacidade de executar', a:'construtor'}
+  ]}
+];
+
+const ARCHETYPES = {
+  criador: {
+    color: 'var(--a-criador)',
+    profession: 'Diretor(a) de Criação',
+    pitch: `Você pensa em imagens, palavras e formas antes de pensar em regras. Seu Ikigai mora onde a <b>originalidade</b> encontra um problema real pra resolver — não criar por criar, mas criar porque algo no mundo precisa de uma cara nova. Carreiras próximas: <b>design</b>, <b>direção de arte</b>, <b>produção audiovisual</b>, <b>escrita criativa</b>.`
+  },
+  investigador: {
+    color: 'var(--a-investigador)',
+    profession: 'Cientista de Dados',
+    pitch: `Você não descansa até entender o "porquê" de verdade. Seu Ikigai está na fronteira entre <b>curiosidade rigorosa</b> e problemas que exigem profundidade em vez de respostas fáceis. Carreiras próximas: <b>ciência de dados</b>, <b>pesquisa</b>, <b>engenharia</b>, <b>medicina diagnóstica</b>.`
+  },
+  cuidador: {
+    color: 'var(--a-cuidador)',
+    profession: 'Psicólogo(a) / Educador(a)',
+    pitch: `Você enxerga pessoas, não só tarefas. Seu Ikigai nasce do encontro entre <b>empatia genuína</b> e a necessidade humana de ser cuidado, ouvido e ensinado. Carreiras próximas: <b>psicologia</b>, <b>educação</b>, <b>saúde</b>, <b>trabalho social</b>.`
+  },
+  estrategista: {
+    color: 'var(--a-estrategista)',
+    profession: 'Empreendedor(a) / Consultor(a) de Negócios',
+    pitch: `Você pensa em sistemas, recursos e caminhos — vê oportunidade onde outros veem bagunça. Seu Ikigai está em transformar <b>visão estratégica</b> em resultado concreto, seja num negócio próprio ou guiando o de outra pessoa. Carreiras próximas: <b>empreendedorismo</b>, <b>consultoria</b>, <b>gestão</b>, <b>produto</b>.`
+  },
+  comunicador: {
+    color: 'var(--a-comunicador)',
+    profession: 'Criador(a) de Conteúdo / Jornalista',
+    pitch: `Você transforma ideia em palavra e palavra em conexão. Seu Ikigai está onde sua <b>voz</b> encontra gente que precisa ouvir exatamente o que você tem pra dizer. Carreiras próximas: <b>jornalismo</b>, <b>marketing de conteúdo</b>, <b>comunicação</b>, <b>criação digital</b>.`
+  },
+  construtor: {
+    color: 'var(--a-construtor)',
+    profession: 'Engenheiro(a) / Arquiteto(a)',
+    pitch: `Você precisa ver a coisa funcionando, tocar o resultado, testar na prática. Seu Ikigai vive no ponto de encontro entre <b>habilidade técnica</b> e a necessidade concreta de o mundo ter coisas melhor construídas. Carreiras próximas: <b>engenharia</b>, <b>arquitetura</b>, <b>ofícios técnicos</b>, <b>produção</b>.`
+  }
+};
+
+/* ================= STATE ================= */
+let current = 0;
+let answers = []; // {qIndex, archetype, pillar}
+
+function pillarCounts(){
+  const counts = {paixao:0,talento:0,mundo:0,dinheiro:0};
+  answers.forEach(ans=>{ counts[ans.pillar]++; });
+  return counts;
+}
+
+function startQuiz(){
+  show('screen-quiz');
+  renderQuestion();
+}
+
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i = a.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// Ordem embaralhada de cada pergunta, sorteada uma vez por sessão de quiz
+// (fica fixa enquanto você navega pra frente/trás na mesma pergunta, mas
+// nunca segue a ordem fixa criador→construtor dos dados originais).
+let shuffledOptions = [];
+
+function renderQuestion(){
+  const q = QUESTIONS[current];
+  document.getElementById('pillar-tag').textContent = PILLAR_NAMES[q.pillar];
+  document.getElementById('pillar-tag').style.color = `var(--c-${q.pillar})`;
+  document.getElementById('q-count').textContent = `Pergunta ${current+1} de ${QUESTIONS.length}`;
+  document.getElementById('progress-fill').style.width = `${(current/QUESTIONS.length)*100}%`;
+  document.getElementById('q-text').textContent = q.text;
+  document.getElementById('back-btn').style.visibility = current === 0 ? 'hidden' : 'visible';
+
+  if(!shuffledOptions[current]){
+    shuffledOptions[current] = shuffle(q.options);
+  }
+
+  const optsEl = document.getElementById('q-options');
+  optsEl.innerHTML = '';
+  shuffledOptions[current].forEach(opt=>{
+    const btn = document.createElement('button');
+    btn.className = 'opt';
+    btn.textContent = opt.t;
+    btn.onclick = () => selectOption(opt);
+    optsEl.appendChild(btn);
+  });
+
+  setVennProgress('venn-quiz', pillarCounts());
+}
+
+function selectOption(opt){
+  const q = QUESTIONS[current];
+  answers[current] = {archetype: opt.a, pillar: q.pillar};
+  current++;
+  if(current < QUESTIONS.length){
+    renderQuestion();
+  } else {
+    showResult();
+  }
+}
+
+function goBack(){
+  if(current === 0) return;
+  current--;
+  answers.length = current;
+  renderQuestion();
+}
+
+function showResult(){
+  const counts = {criador:0, investigador:0, cuidador:0, estrategista:0, comunicador:0, construtor:0};
+  answers.forEach(a=> counts[a.archetype]++ );
+
+  let top = Object.keys(counts).reduce((a,b)=> counts[a] >= counts[b] ? a : b);
+  const arch = ARCHETYPES[top];
+
+  document.documentElement.style.setProperty('--arch-color', arch.color);
+  document.getElementById('profession-name').textContent = arch.profession;
+  document.getElementById('profession-name').style.setProperty('--arch-color', arch.color);
+  document.getElementById('archetype-name').textContent = 'Seu perfil dominante: ' + top.charAt(0).toUpperCase()+top.slice(1);
+  document.getElementById('archetype-name').style.color = arch.color;
+  document.getElementById('pitch').innerHTML = arch.pitch;
+
+  const barsEl = document.getElementById('bars');
+  barsEl.innerHTML = '';
+  const order = Object.keys(counts).sort((a,b)=>counts[b]-counts[a]);
+  order.forEach(key=>{
+    const row = document.createElement('div');
+    row.className = 'bar-row';
+    row.innerHTML = `
+      <div class="bar-label">${key.charAt(0).toUpperCase()+key.slice(1)}</div>
+      <div class="bar-track"><div class="bar-fill" style="background:${ARCHETYPES[key].color}"></div></div>
+      <div class="bar-val">${counts[key]}</div>
+    `;
+    barsEl.appendChild(row);
+  });
+
+  show('screen-result');
+  setTimeout(()=>{
+    setVennProgress('venn-result', pillarCounts());
+    document.querySelectorAll('#bars .bar-fill').forEach((el,i)=>{
+      const key = order[i];
+      el.style.width = (counts[key]/16*100) + '%';
+    });
+  }, 100);
+}
+
+function restart(){
+  current = 0;
+  answers = [];
+  shuffledOptions = [];
+  setVennProgress('venn-quiz', {paixao:0,talento:0,mundo:0,dinheiro:0});
+  setVennProgress('venn-result', {paixao:0,talento:0,mundo:0,dinheiro:0});
+  document.getElementById('venn-result').querySelector('.venn-center-glow').style.opacity = 0;
+  document.getElementById('venn-result').querySelector('.venn-center-text').style.opacity = 0;
+  document.getElementById('venn-result').querySelectorAll('.venn-label').forEach(l=> l.style.opacity = 0);
+  show('screen-hero');
+}
+</script>
+</body>
+</html>
