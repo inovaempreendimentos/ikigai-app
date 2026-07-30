@@ -22,13 +22,16 @@ module.exports = async (req, res) => {
               name: 'Ikigai — Mapa de Carreira Aprofundado',
               description: 'Aprofundamento personalizado dentro do seu arquétipo Ikigai, com sub-áreas específicas e primeiros passos.',
             },
-            unit_amount: 2990, // R$ 29,90
+            unit_amount: 1290, // R$ 12,90
           },
           quantity: 1,
         },
       ],
       success_url: `${origin}/?paid=1&session_id={CHECKOUT_SESSION_ID}&arch=${encodeURIComponent(archetype)}`,
       cancel_url: `${origin}/?canceled=1`,
+      metadata: {
+        projeto: 'ikigai',
+      },
     });
 
     res.status(200).json({ url: session.url });
